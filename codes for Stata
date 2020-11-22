@@ -1,0 +1,38 @@
+//Tuning Random forests model with double looping on the variable and iteration numbers.
+sort u
+gen nvars3 = .
+gen iter3=.
+gen val_error3 = .
+gen oob_error3 = .
+local j = 0
+forvalues m = 250(50)500{
+	forvalues i = 1(1)15{
+		local j = `j' + 1
+		randomforest  cod4_num _* in 1/20000, type(class) iter(`m') numvars(`i')
+	replace iter3 = `m' in `j'
+	replace nvars3 = `i' in `j'
+	replace oob_error3 = `e(OOB_Error)' in `j'
+	predict p3_`j'_`i' in 20001/40000
+	replace val_error3 = `e(error_rate)' in `j'
+	}
+}
+sum val_error
+save "SEER18 04 lung ca 4ML v3 clean 15var 800iter.dta" // change file name each time
+
+//Final model with the chosen parameters
+local j=10
+local k=300   
+randomforest  cod4_num _* in 1/20000, type(class) iter(`k') numvars(`j') //final model
+predict p in 20001/-1   //final model
+return list  //show stored results such as escalar
+ereturn list //show e()
+matrix list e(importance) //or other e()
+matrix list e(fMeasure)
+
+//Mlogit modelling
+mlogit cod4_number _* in 1/20000
+predict pred1_mlogit_cod4 in 20001/-1, outcome(1)
+predict pred2_mlogit_cod4 in 20001/-1, outcome(2)
+predict pred3_mlogit_cod4 in 20001/-1, outcome(3)
+predict pred4_mlogit_cod4 in 20001/-1, outcome(4)
+predict pred5_mlogit_cod4 in 20001/-1, outcome(5)
